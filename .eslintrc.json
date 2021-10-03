@@ -4,7 +4,8 @@
     "webglUtils": "readonly"
   },
   "rules": {
-    "indent": ["warn", 4]
+    "indent": ["warn", 4],
+    "no-var": "warn"
   },
   "env": {
     "browser": true,
