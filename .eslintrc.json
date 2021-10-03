@@ -1,0 +1,13 @@
+{
+  "extends": "eslint:recommended",
+  "globals": {
+    "webglUtils": "readonly"
+  },
+  "rules": {
+    "indent": ["warn", 4]
+  },
+  "env": {
+    "browser": true,
+    "es6": true
+  }
+}
