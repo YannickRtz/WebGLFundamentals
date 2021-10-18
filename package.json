@@ -4,6 +4,7 @@
   "description": "Start http sever:",
   "main": "index.html",
   "scripts": {
+    "start": "live-server",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {
@@ -18,5 +19,8 @@
   "homepage": "https://github.com/YannickRtz/WebGLFundamentals#readme",
   "devDependencies": {
     "eslint": "^7.32.0"
+  },
+  "dependencies": {
+    "live-server": "^1.2.1"
   }
 }
