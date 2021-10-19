@@ -131,168 +131,49 @@ function render(vertexShaderSource, fragmentShaderSource) {
     setRectangle(gl, 0, 0, image.width, image.height);
 
     // Define several convolution kernels
-    const kernels = {
-        normal: [
-            0, 0, 0,
-            0, 1, 0,
-            0, 0, 0,
-        ],
-        gaussianBlur: [
-            0.045, 0.122, 0.045,
-            0.122, 0.332, 0.122,
-            0.045, 0.122, 0.045,
-        ],
-        gaussianBlur2: [
-            1, 2, 1,
-            2, 4, 2,
-            1, 2, 1,
-        ],
-        gaussianBlur3: [
-            0, 1, 0,
-            1, 1, 1,
-            0, 1, 0,
-        ],
-        unsharpen: [
-            -1, -1, -1,
-            -1, 9, -1,
-            -1, -1, -1,
-        ],
-        sharpness: [
-            0, -1, 0,
-            -1, 5, -1,
-            0, -1, 0,
-        ],
-        sharpen: [
-            -1, -1, -1,
-            -1, 16, -1,
-            -1, -1, -1,
-        ],
-        edgeDetect: [
-            -0.125, -0.125, -0.125,
-            -0.125, 1, -0.125,
-            -0.125, -0.125, -0.125,
-        ],
-        edgeDetect2: [
-            -1, -1, -1,
-            -1, 8, -1,
-            -1, -1, -1,
-        ],
-        edgeDetect3: [
-            -5, 0, 0,
-            0, 0, 0,
-            0, 0, 5,
-        ],
-        edgeDetect4: [
-            -1, -1, -1,
-            0, 0, 0,
-            1, 1, 1,
-        ],
-        edgeDetect5: [
-            -1, -1, -1,
-            2, 2, 2,
-            -1, -1, -1,
-        ],
-        edgeDetect6: [
-            -5, -5, -5,
-            -5, 39, -5,
-            -5, -5, -5,
-        ],
-        sobelHorizontal: [
-            1, 2, 1,
-            0, 0, 0,
-            -1, -2, -1,
-        ],
-        sobelVertical: [
-            1, 0, -1,
-            2, 0, -2,
-            1, 0, -1,
-        ],
-        previtHorizontal: [
-            1, 1, 1,
-            0, 0, 0,
-            -1, -1, -1,
-        ],
-        previtVertical: [
-            1, 0, -1,
-            1, 0, -1,
-            1, 0, -1,
-        ],
-        boxBlur: [
-            0.111, 0.111, 0.111,
-            0.111, 0.111, 0.111,
-            0.111, 0.111, 0.111,
-        ],
-        triangleBlur: [
-            0.0625, 0.125, 0.0625,
-            0.125, 0.25, 0.125,
-            0.0625, 0.125, 0.0625,
-        ],
-        emboss: [
-            -2, -1, 0,
-            -1, 1, 1,
-            0, 1, 2,
-        ],
-    };
-    const initialSelection = 'edgeDetect2';
+    const edgeDetect2 = [
+        -1, -1, -1,
+        -1, 8, -1,
+        -1, -1, -1,
+    ];
 
-    // Setup UI to pick kernels.
-    const ui = document.querySelector("#ui");
-    const select = document.createElement("select");
-    for (const name in kernels) {
-        const option = document.createElement("option");
-        option.value = name;
-        if (name === initialSelection) {
-            option.selected = true;
-        }
-        option.appendChild(document.createTextNode(name));
-        select.appendChild(option);
-    }
-    select.onchange = function() {
-        drawWithKernel(this.options[this.selectedIndex].value);
-    };
-    ui.appendChild(select);
+    webglUtils.resizeCanvasToDisplaySize(gl.canvas); // , window.devicePixelRatio);
 
-    drawWithKernel(initialSelection);
+    // Tell WebGL how to convert from clip space to pixels
+    gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
+
+    // Clear the canvas
+    gl.clearColor(0, 0, 0, 1);
+    gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+
+    // Tell it to use our program (pair of shaders)
+    gl.useProgram(program);
+
+    // Bind the attribute/buffer set we want.
+    gl.bindVertexArray(vao);
+
+    // Pass in the canvas resolution so we can convert from
+    // pixels to clipspace in the shader
+    gl.uniform2f(resolutionLocation, gl.canvas.width, gl.canvas.height);
+
+    // Tell the shader to get the texture from texture unit 0
+    gl.uniform1i(imageLocation, 0);
+
+    // set the kernel and it's weight
+    gl.uniform1fv(kernelLocation, edgeDetect2);
+    gl.uniform1f(kernelWeightLocation, computeKernelWeight(edgeDetect2));
+
+    // Draw the rectangle.
+    const primitiveType = gl.TRIANGLES;
+    const rectOffset = 0;
+    const count = 6;
+    gl.drawArrays(primitiveType, rectOffset, count);
 
     function computeKernelWeight(kernel) {
         const weight = kernel.reduce(function (prev, curr) {
             return prev + curr;
         });
         return weight <= 0 ? 1 : weight;
-    }
-
-    function drawWithKernel(name) {
-        webglUtils.resizeCanvasToDisplaySize(gl.canvas);
-
-        // Tell WebGL how to convert from clip space to pixels
-        gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
-
-        // Clear the canvas
-        gl.clearColor(0, 0, 0, 0);
-        gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-
-        // Tell it to use our program (pair of shaders)
-        gl.useProgram(program);
-
-        // Bind the attribute/buffer set we want.
-        gl.bindVertexArray(vao);
-
-        // Pass in the canvas resolution so we can convert from
-        // pixels to clipspace in the shader
-        gl.uniform2f(resolutionLocation, gl.canvas.width, gl.canvas.height);
-
-        // Tell the shader to get the texture from texture unit 0
-        gl.uniform1i(imageLocation, 0);
-
-        // set the kernel and it's weight
-        gl.uniform1fv(kernelLocation, kernels[name]);
-        gl.uniform1f(kernelWeightLocation, computeKernelWeight(kernels[name]));
-
-        // Draw the rectangle.
-        const primitiveType = gl.TRIANGLES;
-        const offset = 0;
-        const count = 6;
-        gl.drawArrays(primitiveType, offset, count);
     }
 }
 
