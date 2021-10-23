@@ -26,10 +26,22 @@ function render(vertexShaderSource, fragmentShaderSource) {
     // Get A WebGL context
     /** @type {HTMLCanvasElement} */
     const canvas = document.querySelector("#canvas");
-    const gl = canvas.getContext("webgl2");
+    const gl = canvas.getContext("webgl2", { premultipliedAlpha: false });
     if (!gl) {
         return;
     }
+
+    let mouseX = 0;
+    let mouseY = 0;
+     
+    function setMousePosition(e) {
+        const rect = canvas.getBoundingClientRect();
+        mouseX = e.clientX - rect.left;
+        mouseY = rect.height - (e.clientY - rect.top) - 1;  // bottom is 0 in WebGL
+        draw();
+    }
+     
+    canvas.addEventListener('mousemove', setMousePosition);
 
     // setup GLSL program
     const program = webglUtils.createProgramFromSources(gl,
@@ -42,8 +54,7 @@ function render(vertexShaderSource, fragmentShaderSource) {
     // lookup uniforms
     const resolutionLocation = gl.getUniformLocation(program, "u_resolution");
     const imageLocation = gl.getUniformLocation(program, "u_image");
-    const kernelLocation = gl.getUniformLocation(program, "u_kernel[0]");
-    const kernelWeightLocation = gl.getUniformLocation(program, "u_kernelWeight");
+    const mouseLocation = gl.getUniformLocation(program, "u_mouse");
 
     // Create a vertex array object (attribute state)
     const vao = gl.createVertexArray();
@@ -94,57 +105,64 @@ function render(vertexShaderSource, fragmentShaderSource) {
     gl.vertexAttribPointer(
         texCoordAttributeLocation, size, type, normalize, stride, offset);
 
-    // Create a texture.
-    const texture = gl.createTexture();
+    function createAndSetupTexture(gl) {
+        const texture = gl.createTexture();
+        gl.bindTexture(gl.TEXTURE_2D, texture);
 
-    // make unit 0 the active texture uint
-    // (ie, the unit all other texture commands will affect
-    gl.activeTexture(gl.TEXTURE0 + 0);
+        // Set up texture so we can render any size image and so we are
+        // working with pixels.
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
+        gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
 
-    // Bind it to texture unit 0's 2D bind point
-    gl.bindTexture(gl.TEXTURE_2D, texture);
+        return texture;
+    }
 
-    // Set the parameters so we don't need mips and so we're not filtering
-    // and we don't repeat at the edges.
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.NEAREST);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.NEAREST);
+    webglUtils.resizeCanvasToDisplaySize(gl.canvas); // , window.devicePixelRatio);
 
-    // Upload the image into the texture.
-    const mipLevel = 0;               // the largest mip
-    const internalFormat = gl.RGBA;   // format we want in the texture
-    const srcFormat = gl.RGBA;        // format of data we are supplying
-    const srcType = gl.UNSIGNED_BYTE; // type of data we are supplying
-    gl.texImage2D(gl.TEXTURE_2D,
-        mipLevel,
-        internalFormat,
-        srcFormat,
-        srcType,
-        image);
+    // create 2 textures and attach them to framebuffers.
+    const textures = [];
+    const framebuffers = [];
+    for (let ii = 0; ii < 2; ++ii) {
+        const texture = createAndSetupTexture(gl);
+        textures.push(texture);
+
+        // make the texture the same size as the image
+        const mipLevel = 0;               // the largest mip
+        const internalFormat = gl.RGBA;   // format we want in the texture
+        const border = 0;                 // must be 0
+        const srcFormat = gl.RGBA;        // format of data we are supplying
+        const srcType = gl.UNSIGNED_BYTE  // type of data we are supplying
+        const data = null;                // no data = create a blank texture
+        gl.texImage2D(
+            gl.TEXTURE_2D, mipLevel, internalFormat, gl.canvas.width, gl.canvas.height, border,
+            srcFormat, srcType, data);
+
+        // Create a framebuffer
+        const fbo = gl.createFramebuffer();
+        framebuffers.push(fbo);
+        gl.bindFramebuffer(gl.FRAMEBUFFER, fbo);
+
+        // Attach a texture to it.
+        const attachmentPoint = gl.COLOR_ATTACHMENT0;
+        gl.framebufferTexture2D(
+            gl.FRAMEBUFFER, attachmentPoint, gl.TEXTURE_2D, texture, mipLevel);
+
+        // Clear the texture
+        gl.clearColor(0, 0, 0, 0);
+        gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+    }
+
+    // Tell WebGL how to convert from clip space to pixels
+    gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
 
     // Bind the position buffer so gl.bufferData that will be called
     // in setRectangle puts data in the position buffer
     gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
 
     // Set a rectangle the same size as the image.
-    setRectangle(gl, 0, 0, image.width, image.height);
-
-    // Define several convolution kernels
-    const edgeDetect2 = [
-        -1, -1, -1,
-        -1, 8, -1,
-        -1, -1, -1,
-    ];
-
-    webglUtils.resizeCanvasToDisplaySize(gl.canvas); // , window.devicePixelRatio);
-
-    // Tell WebGL how to convert from clip space to pixels
-    gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
-
-    // Clear the canvas
-    gl.clearColor(0, 0, 0, 1);
-    gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+    setRectangle(gl, 0, 0, gl.canvas.width, gl.canvas.height);
 
     // Tell it to use our program (pair of shaders)
     gl.useProgram(program);
@@ -156,25 +174,41 @@ function render(vertexShaderSource, fragmentShaderSource) {
     // pixels to clipspace in the shader
     gl.uniform2f(resolutionLocation, gl.canvas.width, gl.canvas.height);
 
-    // Tell the shader to get the texture from texture unit 0
-    gl.uniform1i(imageLocation, 0);
-
-    // set the kernel and it's weight
-    gl.uniform1fv(kernelLocation, edgeDetect2);
-    gl.uniform1f(kernelWeightLocation, computeKernelWeight(edgeDetect2));
-
-    // Draw the rectangle.
     const primitiveType = gl.TRIANGLES;
     const rectOffset = 0;
     const count = 6;
-    gl.drawArrays(primitiveType, rectOffset, count);
 
-    function computeKernelWeight(kernel) {
-        const weight = kernel.reduce(function (prev, curr) {
-            return prev + curr;
-        });
-        return weight <= 0 ? 1 : weight;
+    let frameCount = 0;
+
+    // make this the framebuffer we are rendering to
+    gl.bindFramebuffer(gl.FRAMEBUFFER, framebuffers[frameCount % 2]);
+
+    // start with the original image on unit 0
+    gl.activeTexture(gl.TEXTURE0 + 0);
+    gl.bindTexture(gl.TEXTURE_2D, textures[frameCount % 2]);
+
+    function draw() {
+        frameCount++;
+
+        gl.uniform2f(mouseLocation, mouseX, mouseY);
+
+        // Tell the shader to get the texture from texture unit 0
+        gl.uniform1i(imageLocation, 0);
+
+        // make this the framebuffer we are rendering to
+        gl.bindFramebuffer(gl.FRAMEBUFFER, framebuffers[frameCount % 2]);
+
+        // Draw the rectangle.
+        gl.drawArrays(primitiveType, rectOffset, count);
+
+        // for the next draw, use the texture we just rendered to.
+        gl.bindTexture(gl.TEXTURE_2D, textures[frameCount % 2]);
+        
+        // finally draw the result to the canvas
+        gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+        gl.drawArrays(primitiveType, rectOffset, count);
     }
+    draw();
 }
 
 function setRectangle(gl, x, y, width, height) {

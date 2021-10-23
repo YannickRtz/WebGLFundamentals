@@ -7,9 +7,11 @@ precision highp float;
 // our texture
 uniform sampler2D u_image;
 
-// the convolution kernal data
-uniform float u_kernel[9];
-uniform float u_kernelWeight;
+// mouse position
+uniform vec2 u_mouse;
+
+// Used to pass in the resolution of the canvas
+uniform vec2 u_resolution;
 
 // the texCoords passed in from the vertex shader.
 in vec2 v_texCoord;
@@ -18,17 +20,8 @@ in vec2 v_texCoord;
 out vec4 outColor;
 
 void main() {
-  vec2 onePixel = vec2(1) / vec2(textureSize(u_image, 0));
-
-  vec4 colorSum =
-      texture(u_image, v_texCoord + onePixel * vec2(-1, -1)) * u_kernel[0] +
-      texture(u_image, v_texCoord + onePixel * vec2( 0, -1)) * u_kernel[1] +
-      texture(u_image, v_texCoord + onePixel * vec2( 1, -1)) * u_kernel[2] +
-      texture(u_image, v_texCoord + onePixel * vec2(-1,  0)) * u_kernel[3] +
-      texture(u_image, v_texCoord + onePixel * vec2( 0,  0)) * u_kernel[4] +
-      texture(u_image, v_texCoord + onePixel * vec2( 1,  0)) * u_kernel[5] +
-      texture(u_image, v_texCoord + onePixel * vec2(-1,  1)) * u_kernel[6] +
-      texture(u_image, v_texCoord + onePixel * vec2( 0,  1)) * u_kernel[7] +
-      texture(u_image, v_texCoord + onePixel * vec2( 1,  1)) * u_kernel[8] ;
-  outColor = vec4((colorSum / u_kernelWeight).rgb, 1);
+  vec4 texCol = texture(u_image, v_texCoord);
+  float mouseDist = distance(u_mouse, gl_FragCoord.xy);
+  float newAlpha = mix(1., texCol.a, max(0., min(1., mouseDist - 40.)));
+  outColor = vec4(vec3(1.), newAlpha);
 }
