@@ -55,6 +55,8 @@ function render(vertexShaderSource, fragmentShaderSource) {
     const resolutionLocation = gl.getUniformLocation(program, "u_resolution");
     const imageLocation = gl.getUniformLocation(program, "u_image");
     const mouseLocation = gl.getUniformLocation(program, "u_mouse");
+    const timeLocation = gl.getUniformLocation(program, "u_time");
+    const readOnlyLocation = gl.getUniformLocation(program, "u_readOnly");
 
     // Create a vertex array object (attribute state)
     const vao = gl.createVertexArray();
@@ -191,6 +193,8 @@ function render(vertexShaderSource, fragmentShaderSource) {
         frameCount++;
 
         gl.uniform2f(mouseLocation, mouseX, mouseY);
+        gl.uniform1f(timeLocation, frameCount);
+        gl.uniform1i(readOnlyLocation, 0);
 
         // Tell the shader to get the texture from texture unit 0
         gl.uniform1i(imageLocation, 0);
@@ -200,6 +204,8 @@ function render(vertexShaderSource, fragmentShaderSource) {
 
         // Draw the rectangle.
         gl.drawArrays(primitiveType, rectOffset, count);
+
+        gl.uniform1i(readOnlyLocation, 1);
 
         // for the next draw, use the texture we just rendered to.
         gl.bindTexture(gl.TEXTURE_2D, textures[frameCount % 2]);
