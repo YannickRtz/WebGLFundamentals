@@ -57,6 +57,8 @@ function render(vertexShaderSource, fragmentShaderSource) {
     const mouseLocation = gl.getUniformLocation(program, "u_mouse");
     const timeLocation = gl.getUniformLocation(program, "u_time");
     const readOnlyLocation = gl.getUniformLocation(program, "u_readOnly");
+    const kernelLocation = gl.getUniformLocation(program, "u_kernel[0]");
+    const kernelWeightLocation = gl.getUniformLocation(program, "u_kernelWeight");
 
     // Create a vertex array object (attribute state)
     const vao = gl.createVertexArray();
@@ -94,6 +96,19 @@ function render(vertexShaderSource, fragmentShaderSource) {
         1.0,  0.0,
         1.0,  1.0,
     ]), gl.STATIC_DRAW);
+
+    // Define several convolution kernels
+    const kernel =  [
+        1, 1, 1, 1, 1,
+        1, 2, 2, 2, 1,
+        1, 2, 3, 2, 1,
+        1, 2, 2, 2, 1,
+        1, 1, 1, 1, 1
+    ];
+
+    const kernelWeight = kernel.reduce((prev, cur) => prev + cur);
+
+    console.log('computed kernelweight', kernelWeight);
 
     // Turn on the attribute
     gl.enableVertexAttribArray(texCoordAttributeLocation);
@@ -175,6 +190,10 @@ function render(vertexShaderSource, fragmentShaderSource) {
     // Pass in the canvas resolution so we can convert from
     // pixels to clipspace in the shader
     gl.uniform2f(resolutionLocation, gl.canvas.width, gl.canvas.height);
+
+    // set the kernel and it's weight
+    gl.uniform1fv(kernelLocation, kernel);
+    gl.uniform1f(kernelWeightLocation, kernelWeight);
 
     const primitiveType = gl.TRIANGLES;
     const rectOffset = 0;
