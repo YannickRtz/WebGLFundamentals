@@ -1,4 +1,4 @@
-"use strict";
+import * as webglUtils from '@aaronjewell/webgl2-utils';
 
 const image = new Image();
 image.src = "./leaves.jpg";  // MUST BE SAME DOMAIN!!!
@@ -9,10 +9,10 @@ image.onload = function() {
 function loadShaders() {
     const xhr = new XMLHttpRequest();
     xhr.addEventListener("load", function(data) {
-        const fragmentShaderSource = data.target.response;
+        const fragmentShaderSource: string = (data.target as any).response;
         const xhr = new XMLHttpRequest();
         xhr.addEventListener("load", function(data) {
-            const vertexShaderSource = data.target.response;
+            const vertexShaderSource: string = (data.target as any).response;
             render(vertexShaderSource, fragmentShaderSource);
         });
         xhr.open("GET","shader.vert");
@@ -22,10 +22,10 @@ function loadShaders() {
     xhr.send();
 }
 
-function render(vertexShaderSource, fragmentShaderSource) {
+function render(vertexShaderSource: string, fragmentShaderSource: string) {
     // Get A WebGL context
     /** @type {HTMLCanvasElement} */
-    const canvas = document.querySelector("#canvas");
+    const canvas: HTMLCanvasElement = document.querySelector("#canvas");
     const gl = canvas.getContext("webgl2", { premultipliedAlpha: false });
     if (!gl) {
         return;
@@ -34,10 +34,10 @@ function render(vertexShaderSource, fragmentShaderSource) {
     let mouseX = 0;
     let mouseY = 0;
      
-    function setMousePosition(e) {
+    function setMousePosition(e: MouseEvent) {
         const rect = canvas.getBoundingClientRect();
         mouseX = e.clientX - rect.left;
-        mouseY = rect.height - (e.clientY - rect.top) - 1;  // bottom is 0 in WebGL
+        mouseY = rect.height - (e.clientY - rect.top) - 1;  // bottom is 0 in W
         draw();
     }
      
