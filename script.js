@@ -55,6 +55,7 @@ function render(vertexShaderSource, fragmentShaderSource) {
     const resolutionLocation = gl.getUniformLocation(program, "u_resolution");
     const imageLocation = gl.getUniformLocation(program, "u_image");
     const mouseLocation = gl.getUniformLocation(program, "u_mouse");
+    const mouseLocationPrev = gl.getUniformLocation(program, "u_mouse_prev");
     const timeLocation = gl.getUniformLocation(program, "u_time");
     const readOnlyLocation = gl.getUniformLocation(program, "u_readOnly");
     const kernelLocation = gl.getUniformLocation(program, "u_kernel[0]");
@@ -208,12 +209,19 @@ function render(vertexShaderSource, fragmentShaderSource) {
     gl.activeTexture(gl.TEXTURE0 + 0);
     gl.bindTexture(gl.TEXTURE_2D, textures[frameCount % 2]);
 
+    let mouseXPrev = 0;
+    let mouseYPrev = 0;
+
     function draw() {
         frameCount++;
 
         gl.uniform2f(mouseLocation, mouseX, mouseY);
+        gl.uniform2f(mouseLocationPrev, mouseXPrev, mouseYPrev);
         gl.uniform1f(timeLocation, frameCount);
         gl.uniform1i(readOnlyLocation, 0);
+
+        mouseXPrev = mouseX;
+        mouseYPrev = mouseY;
 
         // Tell the shader to get the texture from texture unit 0
         gl.uniform1i(imageLocation, 0);

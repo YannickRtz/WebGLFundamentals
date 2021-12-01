@@ -10,6 +10,8 @@ uniform sampler2D u_image;
 // mouse position
 uniform vec2 u_mouse;
 
+uniform vec2 u_mouse_prev;
+
 // Time in seconds
 uniform float u_time;
 
@@ -26,6 +28,27 @@ in vec2 v_texCoord;
 // we need to declare an output for the fragment shader
 out vec4 outColor;
 
+// from https://stackoverflow.com/questions/63491296
+float distanceFromPointToLine(in vec2 a, in vec2 b, in vec2 c) {
+  vec2 ba = a - b;
+  vec2 bc = c - b;
+  float d = dot(ba, bc);
+  float len = length(bc);
+  float param = 0.0;
+  if (len != 0.0) {
+    param = clamp(d / (len * len), 0.0, 1.0);
+  }
+  vec2 r = b + bc * param;
+  return distance(a, r);
+}
+
+// from https://github.com/hughsk/glsl-hsv2rgb
+vec3 hsv2rgb(vec3 c) {
+  vec4 K = vec4(1.0, 2.0 / 3.0, 1.0 / 3.0, 3.0);
+  vec3 p = abs(fract(c.xxx + K.xyz) * 6.0 - K.www);
+  return c.z * mix(K.xxx, clamp(p - K.xxx, 0.0, 1.0), c.y);
+}
+
 void main() {
   vec4 texCol = texture(u_image, v_texCoord);
   
@@ -34,13 +57,13 @@ void main() {
     float newAlpha;
     float newRed;
 
-    float mouseDist = distance(u_mouse, gl_FragCoord.xy);
+    float mouseDist = distanceFromPointToLine(gl_FragCoord.xy, u_mouse, u_mouse_prev);
     if (mouseDist < 40.) {
       newAlpha = 1.;
       newRed = 0.;
     } else {
       newAlpha = texCol.a;
-      newRed = fract(texCol.r + 0.02);
+      newRed = fract(texCol.r + 0.004);
     }
 
     float newGreen = sin((newRed - 0.25) * 6.28318530718) / 2. + 0.5;
@@ -48,6 +71,8 @@ void main() {
 
   } else {
     vec2 onePixel = vec2(1) / vec2(textureSize(u_image, 0));
+
+    vec4 theOne = texture(u_image, v_texCoord);
 
     vec4 colSum =
       texture(u_image, v_texCoord + onePixel * vec2(-2, -2)) * u_kernel[0] +
@@ -62,7 +87,7 @@ void main() {
       texture(u_image, v_texCoord + onePixel * vec2( 2, -1)) * u_kernel[9] +
       texture(u_image, v_texCoord + onePixel * vec2(-2,  0)) * u_kernel[10] +
       texture(u_image, v_texCoord + onePixel * vec2(-1,  0)) * u_kernel[11] +
-      texture(u_image, v_texCoord + onePixel * vec2( 0,  0)) * u_kernel[12] +
+                                                      theOne * u_kernel[12] +
       texture(u_image, v_texCoord + onePixel * vec2( 1,  0)) * u_kernel[13] +
       texture(u_image, v_texCoord + onePixel * vec2( 2,  0)) * u_kernel[14] +
       texture(u_image, v_texCoord + onePixel * vec2(-2,  1)) * u_kernel[15] +
@@ -76,6 +101,9 @@ void main() {
       texture(u_image, v_texCoord + onePixel * vec2( 1,  2)) * u_kernel[23] +
       texture(u_image, v_texCoord + onePixel * vec2( 2,  2)) * u_kernel[24] ;
 
-    outColor = vec4(vec3(colSum.g / u_kernelWeight), colSum.a / u_kernelWeight);
+      float hue = colSum.g / u_kernelWeight;
+      vec3 targetCol = hsv2rgb(vec3(hue, 0.8, 1));
+
+    outColor = vec4(targetCol, colSum.a / u_kernelWeight);
   }
 }
