@@ -1,6 +1,6 @@
 const HtmlWebpackPlugin = require('html-webpack-plugin');
-const {CleanWebpackPlugin} = require("clean-webpack-plugin");
 const path = require('path');
+const { CleanWebpackPlugin } = require('clean-webpack-plugin');
 
 module.exports = {
     mode: "development",
@@ -8,20 +8,39 @@ module.exports = {
     module: {
         rules: [
             {
+                // all files with a `.ts` or `.tsx` extension will be handled by `ts-loader`
                 test: /\.tsx?$/,
-                use: 'ts-loader',
-                exclude: /node_modules/,
+                loader: "ts-loader"
+            },
+            {
+                test: /\.s[ac]ss$/i,
+                use: [
+                    // Creates `style` nodes from JS strings
+                    "style-loader",
+                    // Translates CSS into CommonJS
+                    "css-loader",
+                    // Compiles Sass to CSS
+                    "sass-loader",
+                ],
             },
         ],
-    },
-    resolve: {
-        extensions: ['.tsx', '.ts', '.js'],
     },
     output: {
         filename: 'bundle.[hash].js',
         path: path.resolve(__dirname, 'dist'),
     },
     plugins: [
+        /**
+         * All files inside webpack's output.path directory will be removed once, but the
+         * directory itself will not be. If using webpack 4+'s default configuration,
+         * everything under <PROJECT_DIR>/dist/ will be removed.
+         * Use cleanOnceBeforeBuildPatterns to override this behavior.
+         *
+         * During rebuilds, all webpack assets that are not used anymore
+         * will be removed automatically.
+         *
+         * See `Options and Defaults` for information
+         */
         new CleanWebpackPlugin(),
         new HtmlWebpackPlugin({
             template: path.resolve(__dirname,"./index.html"),

@@ -1,4 +1,6 @@
 import * as webglUtils from '@aaronjewell/webgl2-utils';
+import './styles.scss';
+import 'webgl-lint';
 
 const image = new Image();
 image.src = "./leaves.jpg";  // MUST BE SAME DOMAIN!!!
