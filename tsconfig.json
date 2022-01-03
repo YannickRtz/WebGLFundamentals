@@ -2,23 +2,14 @@
     "compilerOptions":
     {
         "outDir": "./dist/",
-        "noImplicitAny": false,
         "sourceMap": true,
-        "module": "ESNext",
+        "module": "es6",
         "moduleResolution": "node",
-        "allowSyntheticDefaultImports": true,
-        "experimentalDecorators": true,
+        "noImplicitAny": false,
         "noUnusedLocals": false,
         "noUnusedParameters": false,
         "target": "es5",
-        "typeRoots":
-        [
-            "node_modules/@types",
-            "typings"
-        ]
     },
-    "include":
-    [
-        "./**/*.ts"
-    ]
+    "include": [ "./src/**/*.ts" ],
+    "exclude": [ "node_modules", "**/*.spec.ts" ]
 }
