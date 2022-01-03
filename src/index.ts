@@ -1,11 +1,8 @@
 import * as webglUtils from '@aaronjewell/webgl2-utils';
 import './styles.scss';
 import 'webgl-lint';
-// @ts-ignore
 import LeavesSrc from './leaves.jpg';
-// @ts-ignore
 import fragmentShaderSource from './shader.frag';
-// @ts-ignore
 import vertexShaderSource from './shader.vert';
 
 const image = new Image();

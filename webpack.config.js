@@ -5,12 +5,14 @@ const { CleanWebpackPlugin } = require('clean-webpack-plugin');
 module.exports = {
     mode: "development",
     entry: path.resolve(__dirname, './src/index.ts'),
+    devtool: 'inline-source-map',
     module: {
         rules: [
             {
                 // all files with a `.ts` or `.tsx` extension will be handled by `ts-loader`
                 test: /\.tsx?$/,
-                loader: "ts-loader"
+                loader: "ts-loader",
+                exclude: /node_modules/,
             },
             {
                 test: /\.s[ac]ss$/i,
