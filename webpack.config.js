@@ -4,7 +4,7 @@ const { CleanWebpackPlugin } = require('clean-webpack-plugin');
 
 module.exports = {
     mode: "development",
-    entry: path.resolve(__dirname, './index.ts'),
+    entry: path.resolve(__dirname, './src/index.ts'),
     module: {
         rules: [
             {
@@ -23,6 +23,14 @@ module.exports = {
                     "sass-loader",
                 ],
             },
+            {
+                test: /\.(png|svg|jpg|jpeg|gif)$/i,
+                type: 'asset/resource',
+            },
+            {
+                test: /\.(frag|vert|glsl)$/i,
+                type: 'asset/source'
+            }
         ],
     },
     output: {
@@ -43,7 +51,8 @@ module.exports = {
          */
         new CleanWebpackPlugin(),
         new HtmlWebpackPlugin({
-            template: path.resolve(__dirname,"./index.html"),
+            favicon: path.resolve(__dirname,"./src/favicon.ico"),
+            template: path.resolve(__dirname,"./src/index.html"),
             minify: false
         })
     ],

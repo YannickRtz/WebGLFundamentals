@@ -1,30 +1,20 @@
 import * as webglUtils from '@aaronjewell/webgl2-utils';
 import './styles.scss';
 import 'webgl-lint';
+// @ts-ignore
+import LeavesSrc from './leaves.jpg';
+// @ts-ignore
+import fragmentShaderSource from './shader.frag';
+// @ts-ignore
+import vertexShaderSource from './shader.vert';
 
 const image = new Image();
-image.src = "./leaves.jpg";  // MUST BE SAME DOMAIN!!!
+image.src = LeavesSrc;
 image.onload = function() {
-    loadShaders();
+    render();
 };
 
-function loadShaders() {
-    const xhr = new XMLHttpRequest();
-    xhr.addEventListener("load", function(data) {
-        const fragmentShaderSource: string = (data.target as any).response;
-        const xhr = new XMLHttpRequest();
-        xhr.addEventListener("load", function(data) {
-            const vertexShaderSource: string = (data.target as any).response;
-            render(vertexShaderSource, fragmentShaderSource);
-        });
-        xhr.open("GET","shader.vert");
-        xhr.send();
-    });
-    xhr.open("GET","shader.frag");
-    xhr.send();
-}
-
-function render(vertexShaderSource: string, fragmentShaderSource: string) {
+function render() {
     // Get A WebGL context
     /** @type {HTMLCanvasElement} */
     const canvas: HTMLCanvasElement = document.querySelector("#canvas");
